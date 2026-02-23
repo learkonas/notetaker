@@ -1,0 +1,23 @@
+{
+  "name": "@apps/local_sync",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "run": "tsx src/main.ts run",
+    "sync": "tsx src/main.ts sync",
+    "index": "tsx src/main.ts index",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.16.0",
+    "dotenv": "^16.6.1",
+    "pino": "^9.9.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  }
+}

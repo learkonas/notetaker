@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DraftNote",
+  "type": "object",
+  "required": [
+    "messageId",
+    "threadId",
+    "internalDate",
+    "from",
+    "subject",
+    "emailText",
+    "hyperlinks",
+    "summary",
+    "keyPoints",
+    "analysis",
+    "questions",
+    "tags",
+    "evidenceQuotes",
+    "confidence",
+    "qualityFlags",
+    "contentHash",
+    "pipelineVersion",
+    "createdAt"
+  ],
+  "properties": {
+    "messageId": { "type": "string" },
+    "threadId": { "type": "string" },
+    "internalDate": { "type": "string" },
+    "from": { "type": "string" },
+    "subject": { "type": "string" },
+    "sourceUrl": { "type": "string" },
+    "emailText": { "type": "string" },
+    "hyperlinks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["anchorText", "url", "normalizedUrl", "domain"],
+        "properties": {
+          "anchorText": { "type": "string" },
+          "url": { "type": "string" },
+          "normalizedUrl": { "type": "string" },
+          "domain": { "type": "string" }
+        }
+      }
+    },
+    "summary": { "type": "string" },
+    "keyPoints": { "type": "array", "items": { "type": "string" } },
+    "analysis": { "type": "string" },
+    "questions": { "type": "array", "items": { "type": "string" } },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "evidenceQuotes": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "qualityFlags": { "type": "array", "items": { "type": "string" } },
+    "contentHash": { "type": "string" },
+    "pipelineVersion": { "type": "string" },
+    "createdAt": { "type": "string" }
+  },
+  "additionalProperties": false
+}
