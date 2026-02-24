@@ -11,6 +11,11 @@ function slugify(input: string): string {
     .slice(0, 80);
 }
 
+function cleanSubject(subject: string): string {
+  const cleaned = subject.replace(/^\s*(fwd?|fw)\s*:\s*/i, "").trim();
+  return cleaned || "untitled";
+}
+
 async function pathExists(targetPath: string): Promise<boolean> {
   try {
     await fs.access(targetPath);
@@ -30,12 +35,11 @@ export const writeNoteSkill: Skill<LocalContext, LocalDraft[], LocalDraft[]> = {
         : path.join(ctx.config.vaultPath, ctx.config.inboxFolder);
       await fs.mkdir(folder, { recursive: true });
       const date = draft.internalDate.slice(0, 10);
-      const base = `${date} - ${slugify(draft.subject)} - ${draft.messageId.slice(0, 8)}`;
+      const subjectForFile = cleanSubject(draft.subject);
+      const base = `${date} - ${slugify(subjectForFile)}`;
       let targetPath = path.join(folder, `${base}.md`);
       let counter = 2;
       while (await pathExists(targetPath)) {
-        const existing = await fs.readFile(targetPath, "utf8");
-        if (existing.includes(`message_id: "${draft.messageId}"`)) break;
         targetPath = path.join(folder, `${base}-${counter}.md`);
         counter += 1;
       }

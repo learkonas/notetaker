@@ -9,6 +9,7 @@ import type { LocalContext } from "./lib/types.js";
 import { checkpointSkill } from "./skills/checkpoint.js";
 import { embedSkill } from "./skills/embed.js";
 import { enrichMarkdownSkill } from "./skills/enrich_markdown.js";
+import { gcsCleanupSkill } from "./skills/gcs_cleanup.js";
 import { gcsListGetSkill } from "./skills/gcs_list_get.js";
 import { qualityScoreSkill } from "./skills/quality_score.js";
 import { retrieveRelatedSkill } from "./skills/retrieve_related.js";
@@ -38,6 +39,7 @@ async function runAll(ctx: LocalContext) {
     styleValidateSkill,
     writeNoteSkill,
     checkpointSkill,
+    gcsCleanupSkill,
   ], drafts);
 }
 

@@ -23,7 +23,9 @@ export const retrieveRelatedSkill: Skill<LocalContext, LocalDraft[], LocalDraft[
     const updated = drafts.map((draft) => {
       const sourceTokens = tokenSet(`${draft.subject} ${draft.summary} ${draft.analysis}`);
       const candidates: RelatedNote[] = noteIndex.map((note) => {
-        const noteTokens = tokenSet(`${note.title} ${note.body.slice(0, 1000)}`);
+        const noteTokens = tokenSet(
+          `${note.title} ${note.aliases.join(" ")} ${note.body.slice(0, 1000)}`,
+        );
         const score = scoreSimilarity(sourceTokens, noteTokens);
         return {
           title: note.title,

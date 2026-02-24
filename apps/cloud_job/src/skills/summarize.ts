@@ -8,6 +8,33 @@ function firstSentence(text: string): string {
   return split[0] ? `${split[0]}.` : cleaned.slice(0, 300);
 }
 
+function sanitizeTag(rawTag: string): string | null {
+  const withoutHash = rawTag.trim().replace(/^#+/, "");
+  if (!withoutHash) return null;
+
+  const normalized = withoutHash
+    .replace(/\s+/g, "-")
+    .toLowerCase()
+    .split("/")
+    .map((part) => part.replace(/[^a-z0-9_-]/g, "").replace(/^-+|-+$/g, ""))
+    .filter(Boolean)
+    .join("/");
+
+  if (!normalized) return null;
+  if (!/[a-z]/.test(normalized)) return null; // avoid numeric-only tags like 1984
+  return normalized;
+}
+
+function sanitizeTags(tags: string[]): string[] {
+  return Array.from(
+    new Set(
+      tags
+        .map(sanitizeTag)
+        .filter((tag): tag is string => Boolean(tag)),
+    ),
+  );
+}
+
 export const summarizeSkill: Skill<CloudContext, SummarizationPayload[], DraftNote[]> = {
   name: "summarize",
   async run(ctx, emails) {
@@ -42,7 +69,7 @@ export const summarizeSkill: Skill<CloudContext, SummarizationPayload[], DraftNo
           "What assumption in this email is least supported?",
           "How does this connect to existing strategy notes?",
         ],
-        tags: ["inbox", "email", "summary"],
+        tags: sanitizeTags(["inbox", "email", "summary"]),
         evidenceQuotes,
         confidence,
         qualityFlags: confidence < 0.7 ? ["low-confidence"] : [],
@@ -121,7 +148,7 @@ async function summarizeWithOpenAI(ctx: CloudContext, drafts: DraftNote[]): Prom
         keyPoints: parsed.keyPoints ?? draft.keyPoints,
         analysis: parsed.analysis ?? draft.analysis,
         questions: parsed.questions ?? draft.questions,
-        tags: parsed.tags ?? draft.tags,
+        tags: sanitizeTags(parsed.tags ?? draft.tags),
         evidenceQuotes: parsed.evidenceQuotes ?? draft.evidenceQuotes,
         confidence: parsed.confidence ?? draft.confidence,
         qualityFlags: parsed.qualityFlags ?? draft.qualityFlags,

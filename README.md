@@ -16,6 +16,10 @@ Daily Gmail ingestion + local Obsidian note finalization pipeline.
 - `apps/local_sync`: local vault indexing, enrichment, and writing.
 - `shared`: schema/prompt/style artifacts.
 
+## Documentation
+
+- `docs/PIPELINE_DEEP_DIVE.md`: detailed explanation of each pipeline step, including summary generation, quality/style scoring, related-note retrieval, and style learning.
+
 ## Setup
 
 1. Install Node.js 20+ and npm.
@@ -32,6 +36,7 @@ Daily Gmail ingestion + local Obsidian note finalization pipeline.
 5. Fill required local settings in `apps/local_sync/.env`:
    - `GCS_BUCKET`
    - `OBSIDIAN_VAULT_PATH`
+   - optional retention: `RETAIN_DRAFT_DAYS=30`
 
 ## Run commands
 
@@ -54,6 +59,24 @@ Optional pnpm usage:
 - Open the URL printed in terminal
 - Approve Gmail access
 - Copy the printed `GMAIL_REFRESH_TOKEN` into `apps/cloud_job/.env`
+
+## Query for today's emails
+
+- Set `GMAIL_QUERY` in `apps/cloud_job/.env` to:
+  - `in:inbox after:{TODAY_START_UNIX} -label:ai-processed`
+- `{TODAY_START_UNIX}` is replaced automatically at runtime with local midnight.
+- Add `MAX_EMAILS_PER_RUN` (for example `100`) to cap each daily run.
+
+## Lockdown checklist
+
+- Rotate any keys/tokens shared in chat or logs.
+- Keep `apps/*/.env` out of source control (already in `.gitignore`).
+- Use a dedicated Gmail inbox account, not your primary mailbox.
+- Set narrow query filters in `GMAIL_QUERY` (date + labels/senders).
+- Keep `MAX_EMAILS_PER_RUN` low initially (10-25) while validating.
+- Set a monthly budget alert in GCP Billing.
+- Run local finalize (`npm run local:run`) after cloud job schedule.
+- Old cloud drafts already written locally are auto-cleaned after `RETAIN_DRAFT_DAYS`.
 
 ## Style onboarding
 

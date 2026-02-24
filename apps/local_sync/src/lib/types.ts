@@ -61,6 +61,7 @@ export type LocalContext = {
     reviewFolder: string;
     styleSamplePath: string;
     pipelineVersion: string;
+    retainDraftDays: number;
   };
   logger: {
     info: (obj: unknown, msg?: string) => void;
@@ -71,7 +72,7 @@ export type LocalContext = {
     storage: unknown;
   };
   styleProfile?: StyleProfile;
-  noteIndex?: { title: string; path: string; body: string; tags: string[] }[];
+  noteIndex?: { title: string; path: string; body: string; tags: string[]; aliases: string[] }[];
   checkpointPath: string;
 };
 

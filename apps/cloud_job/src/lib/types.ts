@@ -55,6 +55,7 @@ export type CloudContext = {
     llmProvider: "mock" | "openai";
     openaiApiKey?: string;
     openaiModel: string;
+    maxEmailsPerRun: number;
   };
   logger: {
     info: (obj: unknown, msg?: string) => void;

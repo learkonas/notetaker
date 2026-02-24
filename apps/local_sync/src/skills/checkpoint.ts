@@ -8,7 +8,7 @@ type CheckpointState = {
   updatedAt: string;
 };
 
-async function loadCheckpoint(checkpointPath: string): Promise<CheckpointState> {
+export async function loadCheckpoint(checkpointPath: string): Promise<CheckpointState> {
   try {
     const raw = await fs.readFile(checkpointPath, "utf8");
     return JSON.parse(raw) as CheckpointState;

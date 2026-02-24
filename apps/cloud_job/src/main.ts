@@ -33,7 +33,7 @@ async function main() {
     clients: { gmail, storage },
   };
 
-  logger.info({ query: config.gmailQuery }, "cloud job started");
+  logger.info({ query: config.gmailQuery, maxEmailsPerRun: config.maxEmailsPerRun }, "cloud job started");
 
   const refs = await gmailListSkill.run(ctx, undefined);
   if (refs.length === 0) {

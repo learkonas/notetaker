@@ -18,7 +18,7 @@ export const gmailListSkill: Skill<CloudContext, void, GmailMessageRef[]> = {
     const res = await gmail.users.messages.list({
       userId: ctx.config.gmailUser,
       q: ctx.config.gmailQuery,
-      maxResults: 500,
+      maxResults: ctx.config.maxEmailsPerRun,
     });
     const messages = res.data.messages ?? [];
     ctx.logger.info({ count: messages.length }, "gmail_list complete");

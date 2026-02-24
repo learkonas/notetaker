@@ -1,6 +1,11 @@
 {
-  "requiredSections": [],
-  "avgLength": 2012.125,
-  "avgBullets": 4,
+  "requiredSections": [
+    "TL;DR",
+    "Key Ideas",
+    "Analysis",
+    "Questions"
+  ],
+  "avgLength": 2271.4935064935066,
+  "avgBullets": 6.181818181818182,
   "preferredTagPrefix": "#"
 }
