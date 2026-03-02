@@ -10,14 +10,7 @@ export type PersistedDraft = RenderedDraft & {
 export const gcsPutSkill: Skill<CloudContext, RenderedDraft[], PersistedDraft[]> = {
   name: "gcs_put",
   async run(ctx, renderedDrafts) {
-    const storage = ctx.clients.storage as {
-      bucket: (name: string) => {
-        file: (path: string) => {
-          save: (data: string, options: { contentType: string }) => Promise<void>;
-        };
-      };
-    };
-    const bucket = storage.bucket(ctx.config.bucket);
+    const bucket = ctx.clients.storage.bucket(ctx.config.bucket);
     const persisted: PersistedDraft[] = [];
     for (const item of renderedDrafts) {
       const jsonPath = `${item.objectPrefix}.json`;

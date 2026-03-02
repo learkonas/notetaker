@@ -53,6 +53,19 @@ export type StyleProfile = {
   preferredTagPrefix: string;
 };
 
+export type GcsFile = {
+  name: string;
+  metadata?: { timeCreated?: string };
+  download: () => Promise<[Buffer]>;
+  delete: () => Promise<unknown>;
+};
+
+export type StorageClient = {
+  bucket: (name: string) => {
+    getFiles: (args: { prefix: string }) => Promise<[GcsFile[]]>;
+  };
+};
+
 export type LocalContext = {
   config: {
     bucket: string;
@@ -69,7 +82,7 @@ export type LocalContext = {
     error: (obj: unknown, msg?: string) => void;
   };
   clients: {
-    storage: unknown;
+    storage: StorageClient;
   };
   styleProfile?: StyleProfile;
   noteIndex?: { title: string; path: string; body: string; tags: string[]; aliases: string[] }[];
