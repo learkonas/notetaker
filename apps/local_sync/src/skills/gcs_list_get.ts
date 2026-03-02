@@ -2,20 +2,10 @@ import type { Skill } from "../lib/skill.js";
 import type { DraftNote, LocalContext, LocalDraft } from "../lib/types.js";
 import { isProcessed } from "./checkpoint.js";
 
-type GcsFile = {
-  name: string;
-  download: () => Promise<[Buffer]>;
-};
-
 export const gcsListGetSkill: Skill<LocalContext, void, LocalDraft[]> = {
   name: "gcs_list_get",
   async run(ctx) {
-    const storage = ctx.clients.storage as {
-      bucket: (bucketName: string) => {
-        getFiles: (args: { prefix: string }) => Promise<[GcsFile[]]>;
-      };
-    };
-    const [files] = await storage.bucket(ctx.config.bucket).getFiles({ prefix: "drafts/" });
+    const [files] = await ctx.clients.storage.bucket(ctx.config.bucket).getFiles({ prefix: "drafts/" });
     const draftFiles = files.filter((file) => file.name.endsWith(".json"));
     const drafts: LocalDraft[] = [];
 

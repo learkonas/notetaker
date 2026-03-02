@@ -6,7 +6,7 @@ import { google } from "googleapis";
 import { loadConfig } from "./lib/config.js";
 import { buildLogger } from "./lib/log.js";
 import { runPipeline } from "./lib/skill.js";
-import type { CloudContext } from "./lib/types.js";
+import type { CloudContext, GmailClient, StorageClient } from "./lib/types.js";
 import { extractLinksSkill } from "./skills/extract_links.js";
 import { gcsPutSkill } from "./skills/gcs_put.js";
 import { gmailGetSkill } from "./skills/gmail_get.js";
@@ -30,7 +30,7 @@ async function main() {
   const ctx: CloudContext = {
     config,
     logger,
-    clients: { gmail, storage },
+    clients: { gmail: gmail as unknown as GmailClient, storage: storage as unknown as StorageClient },
   };
 
   logger.info({ query: config.gmailQuery, maxEmailsPerRun: config.maxEmailsPerRun }, "cloud job started");

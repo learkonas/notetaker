@@ -4,18 +4,7 @@ import type { CloudContext, GmailMessageRef } from "../lib/types.js";
 export const gmailListSkill: Skill<CloudContext, void, GmailMessageRef[]> = {
   name: "gmail_list",
   async run(ctx) {
-    const gmail = ctx.clients.gmail as {
-      users: {
-        messages: {
-          list: (args: {
-            userId: string;
-            q: string;
-            maxResults: number;
-          }) => Promise<{ data: { messages?: GmailMessageRef[] } }>;
-        };
-      };
-    };
-    const res = await gmail.users.messages.list({
+    const res = await ctx.clients.gmail.users.messages.list({
       userId: ctx.config.gmailUser,
       q: ctx.config.gmailQuery,
       maxResults: ctx.config.maxEmailsPerRun,
