@@ -75,6 +75,8 @@ export type LocalContext = {
     styleSamplePath: string;
     pipelineVersion: string;
     retainDraftDays: number;
+    llmProvider: "mock" | "openai";
+    openaiApiKey?: string;
   };
   logger: {
     info: (obj: unknown, msg?: string) => void;
@@ -85,7 +87,7 @@ export type LocalContext = {
     storage: StorageClient;
   };
   styleProfile?: StyleProfile;
-  noteIndex?: { title: string; path: string; body: string; tags: string[]; aliases: string[] }[];
+  noteIndex?: { title: string; path: string; body: string; tags: string[]; aliases: string[]; embedding?: number[] }[];
   checkpointPath: string;
 };
 
@@ -93,4 +95,5 @@ export type LocalDraft = DraftNote & {
   relatedNotes?: RelatedNote[];
   quality?: QualityScore;
   markdown?: string;
+  embedding?: number[];
 };
