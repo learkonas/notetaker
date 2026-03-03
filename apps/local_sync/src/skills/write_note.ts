@@ -16,12 +16,15 @@ function cleanSubject(subject: string): string {
   return cleaned || "untitled";
 }
 
-async function pathExists(targetPath: string): Promise<boolean> {
+async function writeExclusive(targetPath: string, content: string): Promise<boolean> {
   try {
-    await fs.access(targetPath);
+    const fh = await fs.open(targetPath, "wx");
+    await fh.writeFile(content, "utf8");
+    await fh.close();
     return true;
-  } catch {
-    return false;
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === "EEXIST") return false;
+    throw err;
   }
 }
 
@@ -30,21 +33,24 @@ export const writeNoteSkill: Skill<LocalContext, LocalDraft[], LocalDraft[]> = {
   async run(ctx, drafts) {
     const written: LocalDraft[] = [];
     for (const draft of drafts) {
-      const folder = draft.quality?.needsReview
-        ? path.join(ctx.config.vaultPath, ctx.config.reviewFolder)
-        : path.join(ctx.config.vaultPath, ctx.config.inboxFolder);
-      await fs.mkdir(folder, { recursive: true });
-      const date = draft.internalDate.slice(0, 10);
-      const subjectForFile = cleanSubject(draft.subject);
-      const base = `${date} - ${slugify(subjectForFile)}`;
-      let targetPath = path.join(folder, `${base}.md`);
-      let counter = 2;
-      while (await pathExists(targetPath)) {
-        targetPath = path.join(folder, `${base}-${counter}.md`);
-        counter += 1;
+      try {
+        const folder = draft.quality?.needsReview
+          ? path.join(ctx.config.vaultPath, ctx.config.reviewFolder)
+          : path.join(ctx.config.vaultPath, ctx.config.inboxFolder);
+        await fs.mkdir(folder, { recursive: true });
+        const date = draft.internalDate.slice(0, 10);
+        const subjectForFile = cleanSubject(draft.subject);
+        const base = `${date} - ${slugify(subjectForFile)}`;
+        let targetPath = path.join(folder, `${base}.md`);
+        let counter = 2;
+        while (!(await writeExclusive(targetPath, draft.markdown ?? ""))) {
+          targetPath = path.join(folder, `${base}-${counter}.md`);
+          counter += 1;
+        }
+        written.push(draft);
+      } catch (err) {
+        ctx.logger.error({ messageId: draft.messageId, err }, "write_note: failed to write draft; skipping");
       }
-      await fs.writeFile(targetPath, draft.markdown ?? "", "utf8");
-      written.push(draft);
     }
     ctx.logger.info({ count: written.length }, "write_note complete");
     return written;

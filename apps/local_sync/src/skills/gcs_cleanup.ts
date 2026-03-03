@@ -20,16 +20,20 @@ export const gcsCleanupSkill: Skill<LocalContext, LocalDraft[], LocalDraft[]> = 
 
     let deleted = 0;
     for (const file of files) {
-      const messageId = extractMessageId(file.name);
-      if (!messageId || !processedIds.has(messageId)) continue;
+      try {
+        const messageId = extractMessageId(file.name);
+        if (!messageId || !processedIds.has(messageId)) continue;
 
-      const timeCreated = file.metadata?.timeCreated;
-      if (!timeCreated) continue;
-      const createdMs = new Date(timeCreated).getTime();
-      if (Number.isNaN(createdMs) || createdMs > cutoffMs) continue;
+        const timeCreated = file.metadata?.timeCreated;
+        if (!timeCreated) continue;
+        const createdMs = new Date(timeCreated).getTime();
+        if (Number.isNaN(createdMs) || createdMs > cutoffMs) continue;
 
-      await file.delete();
-      deleted += 1;
+        await file.delete();
+        deleted += 1;
+      } catch (err) {
+        ctx.logger.error({ file: file.name, err }, "gcs_cleanup: failed to delete file; skipping");
+      }
     }
 
     ctx.logger.info(

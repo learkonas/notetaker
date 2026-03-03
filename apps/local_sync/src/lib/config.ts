@@ -8,6 +8,8 @@ const envSchema = z.object({
   STYLE_SAMPLE_PATH: z.string().default("Example notes"),
   PIPELINE_VERSION: z.string().default("0.1.0"),
   RETAIN_DRAFT_DAYS: z.coerce.number().int().min(1).max(3650).default(30),
+  LLM_PROVIDER: z.enum(["mock", "openai"]).default("mock"),
+  OPENAI_API_KEY: z.string().optional(),
 });
 
 export function loadConfig() {
@@ -20,5 +22,7 @@ export function loadConfig() {
     styleSamplePath: parsed.STYLE_SAMPLE_PATH,
     pipelineVersion: parsed.PIPELINE_VERSION,
     retainDraftDays: parsed.RETAIN_DRAFT_DAYS,
+    llmProvider: parsed.LLM_PROVIDER,
+    openaiApiKey: parsed.OPENAI_API_KEY,
   };
 }
