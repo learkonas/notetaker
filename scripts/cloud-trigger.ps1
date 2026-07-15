@@ -1,5 +1,5 @@
 param(
-  [string]$JobName = "gmail-obsidian-daily",
+  [string]$JobName = "inbox-obsidian-daily",
   [string]$Region = "us-central1"
 )
 

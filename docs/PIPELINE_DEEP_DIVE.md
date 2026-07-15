@@ -1,6 +1,6 @@
 # Pipeline Deep Dive
 
-This document explains, step by step, how the Gmail -> draft -> Obsidian pipeline works today, with extra detail on summarization, quality/style scoring, related-note retrieval, and style learning.
+This document explains, step by step, how the email inbox -> draft -> Obsidian pipeline works today, with extra detail on summarization, quality/style scoring, related-note retrieval, and style learning. Emails arrive at `notetaker@leonasskau.com`, handled by the self-hosted Cloudflare `email_inbox` worker at `https://inbox.leonasskau.com`.
 
 ## High-level architecture
 
@@ -15,33 +15,32 @@ Data handoff happens through GCS objects under `drafts/YYYY-MM-DD/<messageId>.js
 
 Execution order in `runPipeline(...)`:
 
-1. `gmail_list`
-2. `gmail_get`
+1. `inbox_list`
+2. `inbox_get`
 3. `parse_email`
 4. `extract_links`
 5. `summarize`
 6. `render_draft`
 7. `gcs_put`
-8. `gmail_mark_processed`
+8. `inbox_mark_processed`
 
 Important behavior: each skill runs sequentially and receives the previous skill output. If any skill throws, the run fails and later skills do not run.
 
-### 1) `gmail_list`
+### 1) `inbox_list`
 
-- Runs Gmail query (default `in:inbox -label:ai-processed`).
-- Supports dynamic `{TODAY_START_UNIX}` replacement from config.
-- Returns message references only (`id`, `threadId`).
+- Lists emails in the `inbox` folder of the configured mailbox via `GET /api/v1/mailboxes/:mailbox/emails?folder=inbox`.
+- Authenticates with Cloudflare Access service token headers.
+- Sorted oldest first, capped by `MAX_EMAILS_PER_RUN`.
 
-### 2) `gmail_get`
+### 2) `inbox_get`
 
-- Fetches full Gmail payload for each message with `format: "full"`.
+- Fetches each email in full via `GET /api/v1/mailboxes/:mailbox/emails/:id`.
 - Returns full message bodies + metadata.
 
 ### 3) `parse_email`
 
-- Extracts `From` and `Subject` headers.
-- Decodes Gmail base64url MIME parts.
-- Prefers `text/plain`; falls back to stripped `text/html` text.
+- The inbox worker stores a single `body` field (HTML when available, otherwise plain text).
+- Detects HTML bodies and strips them to plain text for summarization, keeping raw HTML for link extraction.
 - Emits normalized `ParsedEmail` with:
   - `messageId`, `threadId`, `internalDate` (ISO)
   - `from`, `subject`, `emailText`
@@ -129,10 +128,10 @@ Tags are normalized consistently:
   - `<prefix>.json` (full structured draft)
   - `<prefix>.md` (rendered preview)
 
-### 8) `gmail_mark_processed`
+### 8) `inbox_mark_processed`
 
-- Ensures processed label exists (creates if missing).
-- Applies label and removes `INBOX`.
+- Ensures the processed folder exists (creates `ai-processed` if missing).
+- Marks each email read and moves it out of `inbox` into the processed folder.
 - This happens only after successful GCS persistence, which prevents silent data loss.
 
 ## Stage 2: Local pipeline (`apps/local_sync`)

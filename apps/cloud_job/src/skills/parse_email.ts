@@ -1,27 +1,6 @@
+import type { InboxEmailFull } from "../lib/inbox.js";
 import type { Skill } from "../lib/skill.js";
 import type { CloudContext, ParsedEmail } from "../lib/types.js";
-
-type Header = { name?: string; value?: string };
-type Body = { data?: string };
-type Part = { mimeType?: string; body?: Body; parts?: Part[] };
-type GmailMessage = {
-  id: string;
-  threadId: string;
-  internalDate: string;
-  payload?: { headers?: Header[]; body?: Body; parts?: Part[] };
-};
-
-function decodeBase64Url(input: string | undefined): string {
-  if (!input) return "";
-  const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
-  return Buffer.from(normalized, "base64").toString("utf8");
-}
-
-function flattenParts(part?: Part): Part[] {
-  if (!part) return [];
-  const children = part.parts ?? [];
-  return [part, ...children.flatMap(flattenParts)];
-}
 
 function htmlToTextFallback(html: string): string {
   return html
@@ -32,35 +11,28 @@ function htmlToTextFallback(html: string): string {
     .trim();
 }
 
-export const parseEmailSkill: Skill<CloudContext, GmailMessage[], ParsedEmail[]> = {
+function looksLikeHtml(body: string): boolean {
+  return /<\s*(html|body|div|p|a|table|br|span)[\s>/]/i.test(body);
+}
+
+export const parseEmailSkill: Skill<CloudContext, InboxEmailFull[], ParsedEmail[]> = {
   name: "parse_email",
-  async run(ctx, messages) {
-    const parsed: ParsedEmail[] = messages.map((message) => {
-      const headers = message.payload?.headers ?? [];
-      const from = headers.find((h) => h.name?.toLowerCase() === "from")?.value ?? "";
-      const subject =
-        headers.find((h) => h.name?.toLowerCase() === "subject")?.value ?? "(no subject)";
-
-      const parts = flattenParts({
-        mimeType: "root",
-        body: message.payload?.body,
-        parts: message.payload?.parts,
-      });
-      const textPart = parts.find((p) => p.mimeType === "text/plain");
-      const htmlPart = parts.find((p) => p.mimeType === "text/html");
-
-      const text = decodeBase64Url(textPart?.body?.data);
-      const html = decodeBase64Url(htmlPart?.body?.data);
-      const emailText = text || (html ? htmlToTextFallback(html) : "");
+  async run(ctx, emails) {
+    const parsed: ParsedEmail[] = emails.map((email) => {
+      // The inbox worker stores a single body field containing HTML when
+      // available, otherwise plain text.
+      const body = email.body ?? "";
+      const isHtml = looksLikeHtml(body);
+      const emailText = isHtml ? htmlToTextFallback(body) : body;
 
       return {
-        messageId: message.id,
-        threadId: message.threadId,
-        internalDate: new Date(Number(message.internalDate)).toISOString(),
-        from,
-        subject,
+        messageId: email.id,
+        threadId: email.thread_id ?? email.id,
+        internalDate: email.date ?? new Date().toISOString(),
+        from: email.sender ?? "",
+        subject: email.subject || "(no subject)",
         emailText,
-        html: html || undefined,
+        html: isHtml ? body : undefined,
       };
     });
     ctx.logger.info({ count: parsed.length }, "parse_email complete");

@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "tsx src/main.ts",
     "build": "tsc -p tsconfig.json",
-    "oauth:token": "tsx src/tools/get_refresh_token.ts",
     "deploy": "powershell -ExecutionPolicy Bypass -File ../../scripts/cloud-deploy.ps1",
     "trigger": "powershell -ExecutionPolicy Bypass -File ../../scripts/cloud-trigger.ps1"
   },
@@ -15,7 +14,6 @@
     "ajv": "^8.17.1",
     "cheerio": "^1.1.2",
     "dotenv": "^16.6.1",
-    "googleapis": "^154.1.0",
     "pino": "^9.9.0",
     "zod": "^3.24.1"
   },

@@ -1,7 +1,4 @@
-export type GmailMessageRef = {
-  id: string;
-  threadId: string;
-};
+import type { InboxClient } from "./inbox.js";
 
 export type Hyperlink = {
   anchorText: string;
@@ -45,12 +42,11 @@ export type ParsedEmail = {
 export type CloudContext = {
   config: {
     bucket: string;
-    gmailUser: string;
-    gmailQuery: string;
-    gmailProcessedLabel: string;
-    gmailClientId: string;
-    gmailClientSecret: string;
-    gmailRefreshToken: string;
+    inboxApiUrl: string;
+    inboxMailbox: string;
+    inboxProcessedFolder: string;
+    cfAccessClientId: string;
+    cfAccessClientSecret: string;
     pipelineVersion: string;
     llmProvider: "mock" | "openai";
     openaiApiKey?: string;
@@ -63,7 +59,7 @@ export type CloudContext = {
     error: (obj: unknown, msg?: string) => void;
   };
   clients: {
-    gmail: unknown;
+    inbox: InboxClient;
     storage: unknown;
   };
 };

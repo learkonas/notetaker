@@ -18,5 +18,7 @@ COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/cloud_job/package.json apps/cloud_job/package.json
 COPY --from=build /app/apps/cloud_job/dist apps/cloud_job/dist
+COPY --from=build /app/shared/prompts shared/prompts
+COPY --from=build /app/shared/skills shared/skills
 
 CMD ["node", "apps/cloud_job/dist/main.js"]

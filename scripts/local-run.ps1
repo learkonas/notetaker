@@ -1,4 +1,4 @@
-$RepoRoot = "C:\Users\leona\OneDrive\Leo\Programming\Obsidian_note_taker"
+$RepoRoot = "C:\dev\obsidian_notetaker"
 $LogDir = Join-Path $RepoRoot ".local\logs"
 $LogFile = Join-Path $LogDir "local-sync.log"
 

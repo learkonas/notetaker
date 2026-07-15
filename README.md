@@ -1,14 +1,14 @@
-# Gmail to Obsidian Agent
+# Email Inbox to Obsidian Agent
 
-Daily Gmail ingestion + local Obsidian note finalization pipeline.
+Daily email ingestion (via the self-hosted Cloudflare `email_inbox` worker) + local Obsidian note finalization pipeline.
 
 ## What this does
 
-- Cloud job scans Gmail inbox once per day (`in:inbox -label:ai-processed`).
+- Cloud job pulls unprocessed emails from `notetaker@leonasskau.com` via the inbox API at `https://inbox.leonasskau.com` once per day.
 - Parses full email text, extracts hyperlink values, summarizes to draft JSON.
 - Stores drafts in GCS under `drafts/YYYY-MM-DD/<messageId>.json`.
 - Local runner pulls drafts, links to existing vault notes, applies style/quality gates, writes notes.
-- Messages are labeled and archived only after draft persistence succeeds.
+- Emails are marked read and moved to the `ai-processed` folder only after draft persistence succeeds.
 
 ## Monorepo structure
 
@@ -29,19 +29,26 @@ Daily Gmail ingestion + local Obsidian note finalization pipeline.
    - `apps/cloud_job/.env.example` -> `apps/cloud_job/.env`
    - `apps/local_sync/.env.example` -> `apps/local_sync/.env`
 4. Fill required cloud credentials in `apps/cloud_job/.env`:
-   - `GMAIL_CLIENT_ID`
-   - `GMAIL_CLIENT_SECRET`
-   - `GMAIL_REFRESH_TOKEN`
+   - `CF_ACCESS_CLIENT_ID`
+   - `CF_ACCESS_CLIENT_SECRET`
    - `GCS_BUCKET`
 5. Fill required local settings in `apps/local_sync/.env`:
    - `GCS_BUCKET`
    - `OBSIDIAN_VAULT_PATH`
    - optional retention: `RETAIN_DRAFT_DAYS=30`
 
+## Cloudflare Access service token
+
+The inbox API sits behind Cloudflare Access. The cloud job authenticates with a service token:
+
+1. In the Zero Trust dashboard: Access -> Service auth -> Service Tokens -> Create Service Token. Save the Client ID and Client Secret (the secret is shown only once).
+2. On the Access application for `inbox.leonasskau.com`, add a policy with action **Service Auth** and rule Selector = "Service Token" -> your new token.
+3. Put the Client ID and Secret into `apps/cloud_job/.env` as `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`.
+
+The job sends these as `CF-Access-Client-Id` / `CF-Access-Client-Secret` headers on every request.
+
 ## Run commands
 
-- Get Gmail refresh token (one-time):
-  - `npm run cloud:oauth-token`
 - Cloud local test:
   - `npm run cloud:run`
 - Local sync + finalize:
@@ -53,26 +60,17 @@ Optional pnpm usage:
 - `corepack pnpm cloud:run`
 - `corepack pnpm local:run`
 
-## Gmail refresh token
+## Processing model
 
-- Run `npm run cloud:oauth-token`
-- Open the URL printed in terminal
-- Approve Gmail access
-- Copy the printed `GMAIL_REFRESH_TOKEN` into `apps/cloud_job/.env`
-
-## Query for today's emails
-
-- Set `GMAIL_QUERY` in `apps/cloud_job/.env` to:
-  - `in:inbox after:{TODAY_START_UNIX} -label:ai-processed`
-- `{TODAY_START_UNIX}` is replaced automatically at runtime with local midnight.
-- Add `MAX_EMAILS_PER_RUN` (for example `100`) to cap each daily run.
+- The job lists emails in the `inbox` folder of the `notetaker@leonasskau.com` mailbox (oldest first, capped by `MAX_EMAILS_PER_RUN`).
+- After a draft is persisted to GCS, the email is marked read and moved to the folder named by `INBOX_PROCESSED_FOLDER` (default `ai-processed`; created automatically on first run).
+- Anything still in `inbox` is unprocessed, so re-runs are idempotent.
 
 ## Lockdown checklist
 
 - Rotate any keys/tokens shared in chat or logs.
 - Keep `apps/*/.env` out of source control (already in `.gitignore`).
-- Use a dedicated Gmail inbox account, not your primary mailbox.
-- Set narrow query filters in `GMAIL_QUERY` (date + labels/senders).
+- Only send to `notetaker@leonasskau.com` from addresses you trust; anyone who emails it gets a note drafted.
 - Keep `MAX_EMAILS_PER_RUN` low initially (10-25) while validating.
 - Set a monthly budget alert in GCP Billing.
 - Run local finalize (`npm run local:run`) after cloud job schedule.

@@ -1,14 +1,13 @@
 param(
   [string]$ProjectId = $env:GCP_PROJECT_ID,
   [string]$Region = "us-central1",
-  [string]$JobName = "gmail-obsidian-daily",
+  [string]$JobName = "inbox-obsidian-daily",
   [string]$Bucket = $env:GCS_BUCKET,
-  [string]$GmailUser = $env:GMAIL_USER,
-  [string]$GmailQuery = $env:GMAIL_QUERY,
-  [string]$GmailProcessedLabel = $env:GMAIL_PROCESSED_LABEL,
-  [string]$GmailClientId = $env:GMAIL_CLIENT_ID,
-  [string]$GmailClientSecret = $env:GMAIL_CLIENT_SECRET,
-  [string]$GmailRefreshToken = $env:GMAIL_REFRESH_TOKEN,
+  [string]$InboxApiUrl = $env:INBOX_API_URL,
+  [string]$InboxMailbox = $env:INBOX_MAILBOX,
+  [string]$InboxProcessedFolder = $env:INBOX_PROCESSED_FOLDER,
+  [string]$CfAccessClientId = $env:CF_ACCESS_CLIENT_ID,
+  [string]$CfAccessClientSecret = $env:CF_ACCESS_CLIENT_SECRET,
   [string]$PipelineVersion = $env:PIPELINE_VERSION,
   [string]$MaxEmailsPerRun = $env:MAX_EMAILS_PER_RUN,
   [string]$LlmProvider = $env:LLM_PROVIDER,
@@ -34,12 +33,11 @@ if (Test-Path $EnvFilePath) {
 # Rebind from env if not provided explicitly.
 if (-not $ProjectId) { $ProjectId = $env:GCP_PROJECT_ID }
 if (-not $Bucket) { $Bucket = $env:GCS_BUCKET }
-if (-not $GmailUser) { $GmailUser = $env:GMAIL_USER }
-if (-not $GmailQuery) { $GmailQuery = $env:GMAIL_QUERY }
-if (-not $GmailProcessedLabel) { $GmailProcessedLabel = $env:GMAIL_PROCESSED_LABEL }
-if (-not $GmailClientId) { $GmailClientId = $env:GMAIL_CLIENT_ID }
-if (-not $GmailClientSecret) { $GmailClientSecret = $env:GMAIL_CLIENT_SECRET }
-if (-not $GmailRefreshToken) { $GmailRefreshToken = $env:GMAIL_REFRESH_TOKEN }
+if (-not $InboxApiUrl) { $InboxApiUrl = $env:INBOX_API_URL }
+if (-not $InboxMailbox) { $InboxMailbox = $env:INBOX_MAILBOX }
+if (-not $InboxProcessedFolder) { $InboxProcessedFolder = $env:INBOX_PROCESSED_FOLDER }
+if (-not $CfAccessClientId) { $CfAccessClientId = $env:CF_ACCESS_CLIENT_ID }
+if (-not $CfAccessClientSecret) { $CfAccessClientSecret = $env:CF_ACCESS_CLIENT_SECRET }
 if (-not $PipelineVersion) { $PipelineVersion = $env:PIPELINE_VERSION }
 if (-not $MaxEmailsPerRun) { $MaxEmailsPerRun = $env:MAX_EMAILS_PER_RUN }
 if (-not $LlmProvider) { $LlmProvider = $env:LLM_PROVIDER }
@@ -48,12 +46,11 @@ if (-not $OpenAiModel) { $OpenAiModel = $env:OPENAI_MODEL }
 
 if (-not $ProjectId) { throw "GCP_PROJECT_ID is required." }
 if (-not $Bucket) { throw "GCS_BUCKET is required." }
-if (-not $GmailClientId) { throw "GMAIL_CLIENT_ID is required." }
-if (-not $GmailClientSecret) { throw "GMAIL_CLIENT_SECRET is required." }
-if (-not $GmailRefreshToken) { throw "GMAIL_REFRESH_TOKEN is required." }
-if (-not $GmailUser) { $GmailUser = "me" }
-if (-not $GmailQuery) { $GmailQuery = "in:inbox -label:ai-processed" }
-if (-not $GmailProcessedLabel) { $GmailProcessedLabel = "ai-processed" }
+if (-not $CfAccessClientId) { throw "CF_ACCESS_CLIENT_ID is required." }
+if (-not $CfAccessClientSecret) { throw "CF_ACCESS_CLIENT_SECRET is required." }
+if (-not $InboxApiUrl) { $InboxApiUrl = "https://inbox.leonasskau.com" }
+if (-not $InboxMailbox) { $InboxMailbox = "notetaker@leonasskau.com" }
+if (-not $InboxProcessedFolder) { $InboxProcessedFolder = "ai-processed" }
 if (-not $PipelineVersion) { $PipelineVersion = "0.1.0" }
 if (-not $MaxEmailsPerRun) { $MaxEmailsPerRun = "25" }
 if (-not $LlmProvider) { $LlmProvider = "mock" }
@@ -75,12 +72,11 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Deploying Cloud Run Job $JobName"
 $EnvVars = @(
   "GCS_BUCKET=$Bucket",
-  "GMAIL_USER=$GmailUser",
-  "GMAIL_QUERY=$GmailQuery",
-  "GMAIL_PROCESSED_LABEL=$GmailProcessedLabel",
-  "GMAIL_CLIENT_ID=$GmailClientId",
-  "GMAIL_CLIENT_SECRET=$GmailClientSecret",
-  "GMAIL_REFRESH_TOKEN=$GmailRefreshToken",
+  "INBOX_API_URL=$InboxApiUrl",
+  "INBOX_MAILBOX=$InboxMailbox",
+  "INBOX_PROCESSED_FOLDER=$InboxProcessedFolder",
+  "CF_ACCESS_CLIENT_ID=$CfAccessClientId",
+  "CF_ACCESS_CLIENT_SECRET=$CfAccessClientSecret",
   "PIPELINE_VERSION=$PipelineVersion",
   "MAX_EMAILS_PER_RUN=$MaxEmailsPerRun",
   "LLM_PROVIDER=$LlmProvider",

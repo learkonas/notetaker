@@ -7,9 +7,9 @@ Set these variables in PowerShell:
 ```powershell
 $PROJECT_ID="your-project"
 $REGION="us-central1"
-$JOB_NAME="gmail-obsidian-daily"
+$JOB_NAME="inbox-obsidian-daily"
 $IMAGE="gcr.io/$PROJECT_ID/$JOB_NAME:latest"
-$SCHEDULER_NAME="gmail-obsidian-daily-scheduler"
+$SCHEDULER_NAME="inbox-obsidian-daily-scheduler"
 ```
 
 Build + push image:
@@ -24,7 +24,7 @@ Deploy Cloud Run Job:
 gcloud run jobs deploy $JOB_NAME `
   --image $IMAGE `
   --region $REGION `
-  --set-env-vars GCS_BUCKET=your-bucket,GMAIL_USER=me,GMAIL_QUERY="in:inbox -label:ai-processed",GMAIL_PROCESSED_LABEL=ai-processed,GMAIL_CLIENT_ID=your-client-id,GMAIL_CLIENT_SECRET=your-client-secret,GMAIL_REFRESH_TOKEN=your-refresh-token,PIPELINE_VERSION=0.1.0,LLM_PROVIDER=mock
+  --set-env-vars GCS_BUCKET=your-bucket,INBOX_API_URL=https://inbox.leonasskau.com,INBOX_MAILBOX=notetaker@leonasskau.com,INBOX_PROCESSED_FOLDER=ai-processed,CF_ACCESS_CLIENT_ID=your-client-id.access,CF_ACCESS_CLIENT_SECRET=your-client-secret,PIPELINE_VERSION=0.1.0,LLM_PROVIDER=mock
 ```
 
 Run once manually:
@@ -51,7 +51,7 @@ Run local finalize once daily after cloud run.
 PowerShell action:
 
 ```powershell
-cd "C:\Users\leona\OneDrive\Leo\Programming\Obsidian_note_taker"
+cd "C:\dev\obsidian_notetaker"
 npm run local:run
 ```
 
@@ -64,8 +64,8 @@ Recommended:
 
 - If cloud job fails:
   - Check Cloud Run Job logs.
-  - Verify Gmail OAuth credentials and refresh token are valid.
-  - Verify Gmail API scopes include modify (for label/archive).
+  - Verify the Cloudflare Access service token (`CF_ACCESS_CLIENT_ID`/`CF_ACCESS_CLIENT_SECRET`) is valid and its Access policy uses action "Service Auth".
+  - Verify the `notetaker@leonasskau.com` mailbox exists in the inbox app.
   - Verify GCS bucket IAM permissions.
 - If local run writes nothing:
   - Verify `GCS_BUCKET` and ADC credentials (`gcloud auth application-default login`).

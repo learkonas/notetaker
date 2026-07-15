@@ -9,7 +9,6 @@
   "packageManager": "pnpm@10.11.0",
   "scripts": {
     "cloud:run": "npm run dev --workspace=@apps/cloud_job",
-    "cloud:oauth-token": "npm run oauth:token --workspace=@apps/cloud_job",
     "cloud:deploy": "npm run deploy --workspace=@apps/cloud_job",
     "cloud:trigger": "npm run trigger --workspace=@apps/cloud_job",
     "local:run": "npm run run --workspace=@apps/local_sync",

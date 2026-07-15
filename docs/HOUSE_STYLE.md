@@ -1,6 +1,6 @@
 # House Style Guide (Derived from Vault)
 
-This guide is inferred from `154` markdown notes in your Obsidian vault at `C:\Users\leona\OneDrive\Documents\Obsidian Vault`.
+This guide is inferred from `154` markdown notes in your Obsidian vault at `C:\dev\obsidian_vault`.
 
 ## Quantitative profile
 

@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { loadPrompt, loadSkillDoc } from "../lib/skill_docs.js";
 import type { Skill } from "../lib/skill.js";
 import type { CloudContext, DraftNote, SummarizationPayload } from "../lib/types.js";
 
@@ -96,7 +97,18 @@ type OpenAIResponse = {
   }>;
 };
 
+function buildSummarizeInstructions(): string {
+  return [
+    loadPrompt("summary.md"),
+    "The summary, keyPoints, and analysis fields will be rendered inside an Obsidian note. " +
+      "Follow Obsidian Flavored Markdown conventions where formatting is needed, and follow " +
+      "the tag conventions below when producing the tags field.",
+    loadSkillDoc("obsidian-markdown", ["CALLOUTS.md", "PROPERTIES.md"]),
+  ].join("\n\n---\n\n");
+}
+
 async function summarizeWithOpenAI(ctx: CloudContext, drafts: DraftNote[]): Promise<DraftNote[]> {
+  const instructions = buildSummarizeInstructions();
   const updated: DraftNote[] = [];
   for (const draft of drafts) {
     const prompt = [
@@ -118,6 +130,7 @@ async function summarizeWithOpenAI(ctx: CloudContext, drafts: DraftNote[]): Prom
       },
       body: JSON.stringify({
         model: ctx.config.openaiModel,
+        instructions,
         input: prompt,
       }),
     });
