@@ -1,5 +1,13 @@
 import type { InboxClient } from "./inbox.js";
 
+export type StorageClient = {
+  bucket: (name: string) => {
+    file: (path: string) => {
+      save: (data: string, options: { contentType: string }) => Promise<void>;
+    };
+  };
+};
+
 export type Hyperlink = {
   anchorText: string;
   url: string;
@@ -60,7 +68,7 @@ export type CloudContext = {
   };
   clients: {
     inbox: InboxClient;
-    storage: unknown;
+    storage: StorageClient;
   };
 };
 

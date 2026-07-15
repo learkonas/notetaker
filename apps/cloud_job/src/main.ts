@@ -6,7 +6,7 @@ import { loadConfig } from "./lib/config.js";
 import { createInboxClient } from "./lib/inbox.js";
 import { buildLogger } from "./lib/log.js";
 import { runPipeline } from "./lib/skill.js";
-import type { CloudContext } from "./lib/types.js";
+import type { CloudContext, StorageClient } from "./lib/types.js";
 import { extractLinksSkill } from "./skills/extract_links.js";
 import { gcsPutSkill } from "./skills/gcs_put.js";
 import { inboxGetSkill } from "./skills/inbox_get.js";
@@ -33,7 +33,7 @@ async function main() {
   const ctx: CloudContext = {
     config,
     logger,
-    clients: { inbox, storage },
+    clients: { inbox, storage: storage as unknown as StorageClient },
   };
 
   logger.info(

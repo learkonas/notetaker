@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import { loadConfig } from "./lib/config.js";
 import { buildLogger } from "./lib/log.js";
 import { runPipeline } from "./lib/skill.js";
-import type { LocalContext } from "./lib/types.js";
+import type { LocalContext, StorageClient } from "./lib/types.js";
 import { checkpointSkill } from "./skills/checkpoint.js";
 import { embedSkill } from "./skills/embed.js";
 import { enrichMarkdownSkill } from "./skills/enrich_markdown.js";
@@ -60,7 +60,7 @@ async function main() {
   const ctx: LocalContext = {
     config,
     logger,
-    clients: { storage },
+    clients: { storage: storage as unknown as StorageClient },
     checkpointPath: path.join(process.cwd(), ".local", "checkpoint.json"),
   };
 

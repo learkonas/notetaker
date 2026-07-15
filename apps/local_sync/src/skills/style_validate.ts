@@ -11,7 +11,7 @@ function computeArgumentClarity(draft: LocalDraft): number {
 
 export const styleValidateSkill: Skill<LocalContext, LocalDraft[], LocalDraft[]> = {
   name: "style_validate",
-  async run(_ctx, drafts) {
+  async run(ctx, drafts) {
     return drafts.map((draft) => {
       const styleScore = computeArgumentClarity(draft);
       const quality = draft.quality ?? {
@@ -30,6 +30,21 @@ export const styleValidateSkill: Skill<LocalContext, LocalDraft[], LocalDraft[]>
         quality.needsReview = true;
         quality.reasons.push("Argument clarity is weak; tighten thesis, evidence, or implications");
       }
+
+      if (ctx.styleProfile) {
+        const { avgLength, avgBullets } = ctx.styleProfile;
+        const noteLength = draft.markdown?.length ?? 0;
+        const bulletCount = (draft.markdown?.match(/^\s*-\s+/gm) ?? []).length;
+        if (avgLength > 0 && noteLength < avgLength * 0.5) {
+          quality.needsReview = true;
+          quality.reasons.push("Note is significantly shorter than vault average");
+        }
+        if (avgBullets > 0 && bulletCount < avgBullets * 0.5) {
+          quality.needsReview = true;
+          quality.reasons.push("Note has fewer bullets than vault average");
+        }
+      }
+
       return { ...draft, quality };
     });
   },

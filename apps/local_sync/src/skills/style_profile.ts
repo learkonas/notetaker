@@ -1,7 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Skill } from "../lib/skill.js";
 import type { LocalContext, LocalDraft, StyleProfile } from "../lib/types.js";
+
+// Anchored to this file's location: apps/local_sync/src/skills/ → ../../../../shared/style
+const REPO_ROOT = path.resolve(fileURLToPath(import.meta.url), "..", "..", "..", "..", "..");
+const STYLE_PROFILE_OUT = path.join(REPO_ROOT, "shared", "style", "style_profile.json");
 
 async function listMarkdown(dirPath: string): Promise<string[]> {
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
@@ -58,19 +63,16 @@ function pickRequiredSections(contents: string[]): string[] {
 export const styleProfileSkill: Skill<LocalContext, LocalDraft[], LocalDraft[]> = {
   name: "style_profile",
   async run(ctx, drafts) {
+    // Resolve sample dir relative to the vault, not the process cwd.
     const sampleDir = path.isAbsolute(ctx.config.styleSamplePath)
       ? ctx.config.styleSamplePath
-      : path.join(process.cwd(), ctx.config.styleSamplePath);
-    const fallbackSampleDir = path.join(process.cwd(), "..", "..", ctx.config.styleSamplePath);
+      : path.join(ctx.config.vaultPath, ctx.config.styleSamplePath);
+
     let sampleFiles: string[] = [];
     try {
       sampleFiles = await listMarkdown(sampleDir);
     } catch {
-      try {
-        sampleFiles = await listMarkdown(fallbackSampleDir);
-      } catch {
-        ctx.logger.warn({ sampleDir, fallbackSampleDir }, "style sample folder not found; using defaults");
-      }
+      ctx.logger.warn({ sampleDir }, "style sample folder not found; using defaults");
     }
 
     const contents = await Promise.all(sampleFiles.map((file) => fs.readFile(file, "utf8")));
@@ -89,12 +91,8 @@ export const styleProfileSkill: Skill<LocalContext, LocalDraft[], LocalDraft[]> 
       preferredTagPrefix: "#",
     };
     ctx.styleProfile = profile;
-    await fs.mkdir(path.join(process.cwd(), "shared/style"), { recursive: true });
-    await fs.writeFile(
-      path.join(process.cwd(), "shared/style/style_profile.json"),
-      JSON.stringify(profile, null, 2),
-      "utf8",
-    );
+    await fs.mkdir(path.dirname(STYLE_PROFILE_OUT), { recursive: true });
+    await fs.writeFile(STYLE_PROFILE_OUT, JSON.stringify(profile, null, 2), "utf8");
     ctx.logger.info({ sampleFiles: sampleFiles.length }, "style_profile complete");
     return drafts;
   },

@@ -107,6 +107,32 @@ function buildSummarizeInstructions(): string {
   ].join("\n\n---\n\n");
 }
 
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  logger: CloudContext["logger"],
+): Promise<Response> {
+  let delayMs = 1000;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const response = await fetch(url, init);
+    if (response.ok) return response;
+    if (!RETRYABLE_STATUS.has(response.status)) {
+      throw new Error(`OpenAI request failed (non-retryable): ${response.status} ${await response.text()}`);
+    }
+    if (attempt < 3) {
+      logger.warn({ attempt, status: response.status, delayMs }, "OpenAI request failed; retrying");
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      delayMs *= 2;
+    } else {
+      throw new Error(`OpenAI request failed after 3 attempts: ${response.status}`);
+    }
+  }
+  // unreachable
+  throw new Error("fetchWithRetry: exhausted");
+}
+
 async function summarizeWithOpenAI(ctx: CloudContext, drafts: DraftNote[]): Promise<DraftNote[]> {
   const instructions = buildSummarizeInstructions();
   const updated: DraftNote[] = [];
@@ -122,25 +148,27 @@ async function summarizeWithOpenAI(ctx: CloudContext, drafts: DraftNote[]): Prom
       "Output fields: summary,keyPoints,analysis,questions,tags,evidenceQuotes,confidence,qualityFlags",
     ].join("\n\n");
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${ctx.config.openaiApiKey}`,
+    const response = await fetchWithRetry(
+      "https://api.openai.com/v1/responses",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ctx.config.openaiApiKey}`,
+        },
+        body: JSON.stringify({
+          model: ctx.config.openaiModel,
+          instructions,
+          input: prompt,
+        }),
       },
-      body: JSON.stringify({
-        model: ctx.config.openaiModel,
-        instructions,
-        input: prompt,
-      }),
-    });
-    if (!response.ok) {
-      throw new Error(`OpenAI request failed: ${response.status} ${await response.text()}`);
-    }
+      ctx.logger,
+    );
     const payload = (await response.json()) as OpenAIResponse;
     const text = payload.output?.flatMap((o) => o.content ?? []).find((c) => c.type === "output_text")?.text
       ?? payload.output?.flatMap((o) => o.content ?? []).find((c) => Boolean(c.text))?.text;
     if (!text) {
+      ctx.logger.warn({ messageId: draft.messageId }, "OpenAI returned empty response; using mock draft");
       updated.push(draft);
       continue;
     }
@@ -167,6 +195,7 @@ async function summarizeWithOpenAI(ctx: CloudContext, drafts: DraftNote[]): Prom
         qualityFlags: parsed.qualityFlags ?? draft.qualityFlags,
       });
     } catch {
+      ctx.logger.warn({ messageId: draft.messageId }, "OpenAI response JSON parse failed; using mock draft");
       updated.push(draft);
     }
   }
