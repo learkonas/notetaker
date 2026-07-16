@@ -44,3 +44,7 @@ export function loadSkillDoc(skillName: string, referenceFiles: string[] = []): 
 export function loadPrompt(fileName: string): string {
   return readCached(path.join(findSharedDir(), "prompts", fileName));
 }
+
+export function loadStyleDoc(fileName: string): string {
+  return readCached(path.join(findSharedDir(), "style", fileName));
+}

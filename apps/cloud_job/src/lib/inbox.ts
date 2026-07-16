@@ -34,6 +34,7 @@ export type InboxClient = {
   createFolder: (name: string) => Promise<InboxFolder | null>;
   moveEmail: (id: string, folderId: string) => Promise<void>;
   markRead: (id: string) => Promise<void>;
+  sendEmail: (message: { to: string; subject: string; text: string }) => Promise<void>;
 };
 
 export function createInboxClient(options: {
@@ -102,6 +103,13 @@ export function createInboxClient(options: {
       await request(`/emails/${encodeURIComponent(id)}`, {
         method: "PUT",
         body: JSON.stringify({ read: true }),
+      });
+    },
+    async sendEmail({ to, subject, text }) {
+      // The worker requires `from` to match the mailbox address exactly.
+      await request("/emails", {
+        method: "POST",
+        body: JSON.stringify({ to, from: options.mailbox, subject, text }),
       });
     },
   };

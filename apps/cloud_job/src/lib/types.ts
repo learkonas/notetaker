@@ -15,6 +15,13 @@ export type Hyperlink = {
   domain: string;
 };
 
+export type LinkContent = {
+  url: string;
+  resolvedUrl: string;
+  title?: string;
+  markdown: string;
+};
+
 export type DraftNote = {
   messageId: string;
   threadId: string;
@@ -24,6 +31,8 @@ export type DraftNote = {
   sourceUrl?: string;
   emailText: string;
   hyperlinks: Hyperlink[];
+  noteType: string;
+  sourceName: string;
   summary: string;
   keyPoints: string[];
   analysis: string;
@@ -56,9 +65,10 @@ export type CloudContext = {
     cfAccessClientId: string;
     cfAccessClientSecret: string;
     pipelineVersion: string;
-    llmProvider: "mock" | "openai";
-    openaiApiKey?: string;
-    openaiModel: string;
+    llmProvider: "mock" | "anthropic";
+    claudeApiKey?: string;
+    claudeModel: string;
+    notifyEmail: string;
     maxEmailsPerRun: number;
   };
   logger: {
@@ -72,6 +82,10 @@ export type CloudContext = {
   };
 };
 
-export type SummarizationPayload = ParsedEmail & {
+export type LinkedEmail = ParsedEmail & {
   hyperlinks: Hyperlink[];
+};
+
+export type SummarizationPayload = LinkedEmail & {
+  linkContents: LinkContent[];
 };

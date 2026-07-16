@@ -1,6 +1,6 @@
 import { load } from "cheerio";
 import type { Skill } from "../lib/skill.js";
-import type { CloudContext, Hyperlink, ParsedEmail, SummarizationPayload } from "../lib/types.js";
+import type { CloudContext, Hyperlink, LinkedEmail, ParsedEmail } from "../lib/types.js";
 
 const TRACKING_DOMAINS = new Set([
   "click.email.substack.com",
@@ -9,20 +9,18 @@ const TRACKING_DOMAINS = new Set([
 ]);
 
 function cleanUrl(raw: string): string {
-  try {
-    const url = new URL(raw);
-    const paramsToDrop = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"];
-    for (const key of paramsToDrop) url.searchParams.delete(key);
-    return url.toString();
-  } catch {
-    return raw;
-  }
+  // Drop the query string (and anything after it) entirely — it is almost
+  // always tracking noise in newsletter links.
+  const withoutQuery = raw.split("?")[0] ?? raw;
+  return withoutQuery.replace(/[.,;)\]]+$/, "");
 }
 
 function hyperlinkFromUrl(raw: string): Hyperlink | null {
   try {
     const normalizedUrl = cleanUrl(raw);
-    const domain = new URL(normalizedUrl).hostname.toLowerCase();
+    const url = new URL(normalizedUrl);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    const domain = url.hostname.toLowerCase();
     if (domain.includes("unsubscribe") || TRACKING_DOMAINS.has(domain)) return null;
     return { anchorText: normalizedUrl, url: raw, normalizedUrl, domain };
   } catch {
@@ -30,7 +28,7 @@ function hyperlinkFromUrl(raw: string): Hyperlink | null {
   }
 }
 
-export const extractLinksSkill: Skill<CloudContext, ParsedEmail[], SummarizationPayload[]> = {
+export const extractLinksSkill: Skill<CloudContext, ParsedEmail[], LinkedEmail[]> = {
   name: "extract_links",
   async run(ctx, emails) {
     const withLinks = emails.map((email) => {

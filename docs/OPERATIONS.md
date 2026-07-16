@@ -48,17 +48,22 @@ gcloud scheduler jobs create http $SCHEDULER_NAME `
 
 Run local finalize once daily after cloud run.
 
-PowerShell action:
+The task `ObsidianNoteSyncDaily` runs this action:
 
-```powershell
-cd "C:\dev\obsidian_notetaker"
-npm run local:run
+```text
+wscript.exe "C:\dev\obsidian_notetaker\scripts\local-run-hidden.vbs"
 ```
 
-Recommended:
-- Trigger: daily at a fixed time (for example 10:00 local).
-- Retry: 1 retry after 15 minutes.
-- Run whether user is logged in or not.
+The VBS wrapper launches `scripts\local-run.ps1` (which runs `npm run local:run`
+and logs to `.local\logs\local-sync.log`) with no visible window. Launching
+PowerShell directly — even with `-WindowStyle Hidden` — briefly flashes a
+console window, so the `wscript.exe` wrapper is required to keep runs silent.
+
+Current triggers/settings:
+- Daily at 23:40, plus at logon.
+- `DisallowStartIfOnBatteries` + `StartWhenAvailable`: a run skipped on battery
+  starts as soon as AC power is connected (this is expected catch-up behaviour).
+- Modifying the task requires elevation (UAC prompt).
 
 ## Troubleshooting
 

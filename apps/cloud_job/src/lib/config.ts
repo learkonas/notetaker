@@ -8,9 +8,10 @@ const envSchema = z.object({
   CF_ACCESS_CLIENT_ID: z.string().min(1),
   CF_ACCESS_CLIENT_SECRET: z.string().min(1),
   PIPELINE_VERSION: z.string().default("0.1.0"),
-  LLM_PROVIDER: z.enum(["mock", "openai"]).default("mock"),
-  OPENAI_API_KEY: z.string().optional(),
-  OPENAI_MODEL: z.string().default("gpt-4.1-mini"),
+  LLM_PROVIDER: z.enum(["mock", "anthropic"]).default("anthropic"),
+  CLAUDE_API_KEY: z.string().optional(),
+  CLAUDE_MODEL: z.string().default("claude-opus-4-8"),
+  NOTIFY_EMAIL: z.string().email().default("leo.nasskau@gmail.com"),
   MAX_EMAILS_PER_RUN: z.coerce.number().int().min(1).max(100).default(25),
 });
 
@@ -25,8 +26,9 @@ export function loadConfig() {
     cfAccessClientSecret: parsed.CF_ACCESS_CLIENT_SECRET,
     pipelineVersion: parsed.PIPELINE_VERSION,
     llmProvider: parsed.LLM_PROVIDER,
-    openaiApiKey: parsed.OPENAI_API_KEY,
-    openaiModel: parsed.OPENAI_MODEL,
+    claudeApiKey: parsed.CLAUDE_API_KEY,
+    claudeModel: parsed.CLAUDE_MODEL,
+    notifyEmail: parsed.NOTIFY_EMAIL,
     maxEmailsPerRun: parsed.MAX_EMAILS_PER_RUN,
   };
 }
