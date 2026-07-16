@@ -58,6 +58,16 @@ if (-not $OpenAiModel) { $OpenAiModel = "gpt-4.1-mini" }
 
 $Image = "gcr.io/$ProjectId/${JobName}:latest"
 $BuildContext = Resolve-Path (Join-Path $PSScriptRoot "..")
+
+Write-Host "Type-checking cloud_job"
+Push-Location $BuildContext
+npm run typecheck --workspace=@apps/cloud_job
+$TypecheckExit = $LASTEXITCODE
+Pop-Location
+if ($TypecheckExit -ne 0) {
+  throw "Type check failed. Fix TypeScript errors before deploying."
+}
+
 Write-Host "Validating project access for $ProjectId"
 gcloud projects describe $ProjectId --project $ProjectId --format="value(projectId)" | Out-Null
 if ($LASTEXITCODE -ne 0) {

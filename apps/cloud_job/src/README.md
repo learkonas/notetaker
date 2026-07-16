@@ -23,5 +23,5 @@ If the inbox is empty the job exits early. Any uncaught error sets a non-zero ex
 ## Running
 
 - `npm run dev` — run directly from source with `tsx` (loads `../.env`).
-- `npm run build` — compile to `../dist`.
+- `npm run typecheck` — type-check with `tsc` (no output; the deploy script runs this automatically). The deployed container also runs straight from source with `tsx`, so there is no build step.
 - Configuration is environment variables validated in `lib/config.ts` (bucket name, inbox API URL and credentials, LLM provider, etc.).
