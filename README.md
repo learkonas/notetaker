@@ -5,9 +5,10 @@ Daily email ingestion (via the self-hosted Cloudflare `email_inbox` worker) + lo
 ## What this does
 
 - Cloud job pulls unprocessed emails from `notetaker@leonasskau.com` via the inbox API at `https://inbox.leonasskau.com` once per day.
-- Parses full email text, extracts hyperlink values, summarizes to draft JSON.
+- Converts email HTML to clean markdown with Defuddle, extracts hyperlinks (query strings stripped), and fetches the actual content of up to 5 linked pages per email.
+- Summarizes with Claude (`claude-opus-4-8` by default), guided by the vault's Tag Taxonomy, the quality rubric, and the style rules. No fallback: failed emails stay in the inbox for the next run and a failure digest is emailed to `NOTIFY_EMAIL`.
 - Stores drafts in GCS under `drafts/YYYY-MM-DD/<messageId>.json`.
-- Local runner pulls drafts, links to existing vault notes, applies style/quality gates, writes notes.
+- Local runner pulls drafts, finds related vault notes via embeddings then re-ranks them with a small OpenAI call (`enrich_links`), applies style/quality gates, and writes notes with Tag Taxonomy frontmatter (`type`/`source`/`status`/`tags`) and title-only filenames.
 - Emails are marked read and moved to the `ai-processed` folder only after draft persistence succeeds.
 
 ## Monorepo structure
@@ -63,8 +64,14 @@ Optional pnpm usage:
 ## Processing model
 
 - The job lists emails in the `inbox` folder of the `notetaker@leonasskau.com` mailbox (oldest first, capped by `MAX_EMAILS_PER_RUN`).
+- Each email runs through the pipeline in isolation: a failure (e.g. Claude error) leaves that email in the inbox for the next run and never blocks the others. Failures are reported in a single digest email to `NOTIFY_EMAIL` (default `leo.nasskau@gmail.com`), sent through the inbox API's compose endpoint.
 - After a draft is persisted to GCS, the email is marked read and moved to the folder named by `INBOX_PROCESSED_FOLDER` (default `ai-processed`; created automatically on first run).
 - Anything still in `inbox` is unprocessed, so re-runs are idempotent.
+
+## Prompts and taxonomy
+
+- The summarize call's system prompt combines `shared/prompts/summary.md`, the `obsidian-markdown` skill doc, `shared/prompts/tag_taxonomy.md`, and `shared/style/style_rules.md`.
+- `shared/prompts/tag_taxonomy.md` is a snapshot of the vault's `Tag Taxonomy.md`; `scripts/cloud-deploy.ps1` refreshes it from the vault on every deploy.
 
 ## Lockdown checklist
 

@@ -64,25 +64,26 @@ function renderQuestionCallout(questions: string[]): string[] {
   return renderCallout("question", "Open questions", questions);
 }
 
+function yamlScalar(value: string): string {
+  return /^[A-Za-z0-9][A-Za-z0-9 .&'-]*$/.test(value) ? value : JSON.stringify(value);
+}
+
+// Frontmatter follows the vault's Tag Taxonomy: type/source/status properties
+// plus a tags list, with capture metadata kept as extra properties.
 function renderFrontmatter(draft: LocalDraft): string {
   const safeTags = sanitizeTags(draft.tags);
-  const tags = safeTags.map((tag) => `"${tag}"`).join(", ");
-  const related =
-    draft.relatedNotes?.map((note) => `"${note.title}"`).join(", ") ?? "";
-  const qualityScore = draft.quality?.overall ?? 0;
-  const styleScore = draft.quality?.styleScore ?? 0;
-  const needsReview = draft.quality?.needsReview ?? false;
+  const tagLines = safeTags.length
+    ? ["tags:", ...safeTags.map((tag) => `  - ${tag}`)]
+    : ["tags: []"];
   return [
     "---",
-    "source: ai_notetaker",
+    `type: ${yamlScalar(draft.noteType || "article")}`,
+    `source: ${yamlScalar(draft.sourceName || "AI Notetaker")}`,
+    "status: needs-review",
+    ...tagLines,
     `date: "${draft.internalDate}"`,
     `url: "${draft.sourceUrl ?? ""}"`,
-    `tags: [${tags}]`,
     `pipeline_version: "${draft.pipelineVersion}"`,
-    `related_note_ids: [${related}]`,
-    `quality_score: ${qualityScore.toFixed(2)}`,
-    `style_score: ${styleScore.toFixed(2)}`,
-    `needs_review: ${needsReview}`,
     "---",
   ].join("\n");
 }

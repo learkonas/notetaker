@@ -14,6 +14,8 @@ export type DraftNote = {
   sourceUrl?: string;
   emailText: string;
   hyperlinks: Hyperlink[];
+  noteType?: string;
+  sourceName?: string;
   summary: string;
   keyPoints: string[];
   analysis: string;
@@ -77,6 +79,7 @@ export type LocalContext = {
     retainDraftDays: number;
     llmProvider: "mock" | "openai";
     openaiApiKey?: string;
+    openaiModel: string;
   };
   logger: {
     info: (obj: unknown, msg?: string) => void;

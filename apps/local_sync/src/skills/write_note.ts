@@ -3,17 +3,27 @@ import path from "node:path";
 import type { Skill } from "../lib/skill.js";
 import type { LocalContext, LocalDraft } from "../lib/types.js";
 
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
+function cleanSubject(subject: string): string {
+  let cleaned = subject.trim();
+  let previous = "";
+  while (previous !== cleaned) {
+    previous = cleaned;
+    cleaned = cleaned.replace(/^\s*(fwd?|fw)\s*:\s*/i, "");
+  }
+  return cleaned.trim() || "Untitled";
 }
 
-function cleanSubject(subject: string): string {
-  const cleaned = subject.replace(/^\s*(fwd?|fw)\s*:\s*/i, "").trim();
-  return cleaned || "untitled";
+// Keep the subject readable (Obsidian uses the filename as the note title),
+// stripping only characters invalid on Windows or in wikilinks.
+function titleToFilename(title: string): string {
+  const sanitized = title
+    .replace(/[<>:"/\\|?*#^[\]\u0000-\u001f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\.+$/, "")
+    .slice(0, 120)
+    .trim();
+  return sanitized || "Untitled";
 }
 
 async function writeExclusive(targetPath: string, content: string): Promise<boolean> {
@@ -38,9 +48,7 @@ export const writeNoteSkill: Skill<LocalContext, LocalDraft[], LocalDraft[]> = {
           ? path.join(ctx.config.vaultPath, ctx.config.reviewFolder)
           : path.join(ctx.config.vaultPath, ctx.config.inboxFolder);
         await fs.mkdir(folder, { recursive: true });
-        const date = draft.internalDate.slice(0, 10);
-        const subjectForFile = cleanSubject(draft.subject);
-        const base = `${date} - ${slugify(subjectForFile)}`;
+        const base = titleToFilename(cleanSubject(draft.subject));
         let targetPath = path.join(folder, `${base}.md`);
         let counter = 2;
         while (!(await writeExclusive(targetPath, draft.markdown ?? ""))) {

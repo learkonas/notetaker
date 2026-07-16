@@ -10,6 +10,7 @@ const envSchema = z.object({
   RETAIN_DRAFT_DAYS: z.coerce.number().int().min(1).max(3650).default(30),
   LLM_PROVIDER: z.enum(["mock", "openai"]).default("mock"),
   OPENAI_API_KEY: z.string().optional(),
+  OPENAI_MODEL: z.string().default("gpt-5.6-terra"),
 });
 
 export function loadConfig() {
@@ -24,5 +25,6 @@ export function loadConfig() {
     retainDraftDays: parsed.RETAIN_DRAFT_DAYS,
     llmProvider: parsed.LLM_PROVIDER,
     openaiApiKey: parsed.OPENAI_API_KEY,
+    openaiModel: parsed.OPENAI_MODEL,
   };
 }

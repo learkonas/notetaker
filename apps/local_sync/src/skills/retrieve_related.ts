@@ -67,14 +67,19 @@ export const retrieveRelatedSkill: Skill<LocalContext, LocalDraft[], LocalDraft[
         });
       }
 
+      // Keep a wider shortlist for the enrich_links agent to re-rank; final
+      // note only keeps the agent's top 3–5 picks.
       const relatedNotes = candidates
         .filter((candidate) => candidate.score >= 0.1)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 5);
+        .slice(0, 20);
       return { ...draft, relatedNotes };
     });
 
-    ctx.logger.info({ drafts: updated.length, mode: useEmbeddings ? "semantic" : "lexical" }, "retrieve_related complete");
+    ctx.logger.info(
+      { drafts: updated.length, mode: useEmbeddings ? "semantic" : "lexical", shortlist: 20 },
+      "retrieve_related complete",
+    );
     return updated;
   },
 };

@@ -19,6 +19,8 @@ const draftNoteSchema = z.object({
   sourceUrl: z.string().optional(),
   emailText: z.string(),
   hyperlinks: z.array(hyperlinkSchema),
+  noteType: z.string().optional(),
+  sourceName: z.string().optional(),
   summary: z.string(),
   keyPoints: z.array(z.string()),
   analysis: z.string(),

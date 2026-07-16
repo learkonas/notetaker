@@ -8,6 +8,7 @@ import { runPipeline } from "./lib/skill.js";
 import type { LocalContext, StorageClient } from "./lib/types.js";
 import { checkpointSkill } from "./skills/checkpoint.js";
 import { embedSkill } from "./skills/embed.js";
+import { enrichLinksSkill } from "./skills/enrich_links.js";
 import { enrichMarkdownSkill } from "./skills/enrich_markdown.js";
 import { gcsCleanupSkill } from "./skills/gcs_cleanup.js";
 import { gcsListGetSkill } from "./skills/gcs_list_get.js";
@@ -32,6 +33,7 @@ async function runAll(ctx: LocalContext) {
     vaultScanSkill,
     embedSkill,
     retrieveRelatedSkill,
+    enrichLinksSkill,
     styleProfileSkill,
     qualityScoreSkill,
     enrichMarkdownSkill,
