@@ -17,6 +17,8 @@ param(
   [string]$VaultPath = "C:\dev\obsidian_vault"
 )
 
+$ErrorActionPreference = "Stop"
+
 # Load app env file if values are missing in shell environment.
 $EnvFilePath = Join-Path $PSScriptRoot "..\apps\cloud_job\.env"
 if (Test-Path $EnvFilePath) {
@@ -148,64 +150,59 @@ function Deploy-CloudRunJobViaRest {
     if ($status -ne 404) { throw }
   }
 
-  if ($existing) {
-    Write-Host "Updating existing job via Cloud Run Admin API (gcloud run jobs unsupported on this SDK)"
-    $bodyObj = @{
-      template = @{
-        taskCount = 1
-        template  = @{
-          maxRetries = 0
-          timeout    = "600s"
-          containers = @(
-            @{
-              image     = $Image
-              env       = $envArray
-              resources = @{
-                limits = @{
-                  cpu    = "1000m"
-                  memory = "512Mi"
-                }
-              }
-            }
-          )
+  $executionTemplate = @{
+    maxRetries = 0
+    timeout    = "600s"
+    containers = @(
+      @{
+        image     = $Image
+        env       = $envArray
+        resources = @{
+          limits = @{
+            cpu    = "1000m"
+            memory = "512Mi"
+          }
         }
       }
-    }
-    if ($existing.template.template.serviceAccount) {
-      $bodyObj.template.template.serviceAccount = $existing.template.template.serviceAccount
-    }
-    if ($existing.template.template.executionEnvironment) {
-      $bodyObj.template.template.executionEnvironment = $existing.template.template.executionEnvironment
-    }
-    $body = $bodyObj | ConvertTo-Json -Depth 20 -Compress
-    $op = Invoke-RestMethod -Method Patch -Uri "$jobUrl`?updateMask=template" -Headers $headers -Body $body
-  } else {
-    Write-Host "Creating job via Cloud Run Admin API (gcloud run jobs unsupported on this SDK)"
-    $bodyObj = @{
-      launchStage = "GA"
-      template    = @{
-        taskCount = 1
-        template  = @{
-          maxRetries = 0
-          timeout    = "600s"
-          containers = @(
-            @{
-              image     = $Image
-              env       = $envArray
-              resources = @{
-                limits = @{
-                  cpu    = "1000m"
-                  memory = "512Mi"
-                }
-              }
-            }
-          )
+    )
+  }
+  if ($existing -and $existing.template.template.serviceAccount) {
+    $executionTemplate.serviceAccount = $existing.template.template.serviceAccount
+  }
+  if ($existing -and $existing.template.template.executionEnvironment) {
+    $executionTemplate.executionEnvironment = $existing.template.template.executionEnvironment
+  }
+
+  try {
+    if ($existing) {
+      Write-Host "Updating existing job via Cloud Run Admin API (gcloud run jobs unsupported on this SDK)"
+      # Patch the Job resource directly (no updateMask query — Run rejects it on this endpoint).
+      $bodyObj = @{
+        template = @{
+          taskCount = 1
+          template  = $executionTemplate
         }
       }
+      $body = $bodyObj | ConvertTo-Json -Depth 20 -Compress
+      $op = Invoke-RestMethod -Method Patch -Uri $jobUrl -Headers $headers -Body $body
+    } else {
+      Write-Host "Creating job via Cloud Run Admin API (gcloud run jobs unsupported on this SDK)"
+      $bodyObj = @{
+        launchStage = "GA"
+        template    = @{
+          taskCount = 1
+          template  = $executionTemplate
+        }
+      }
+      $body = $bodyObj | ConvertTo-Json -Depth 20 -Compress
+      # Build query with -f so PowerShell 7 ternary '?' cannot swallow the param.
+      $createUrl = "https://run.googleapis.com/v2/projects/{0}/locations/{1}/jobs?jobId={2}" -f $ProjectId, $Region, $JobName
+      $op = Invoke-RestMethod -Method Post -Uri $createUrl -Headers $headers -Body $body
     }
-    $body = $bodyObj | ConvertTo-Json -Depth 20 -Compress
-    $createUrl = "https://run.googleapis.com/v2/projects/$ProjectId/locations/$Region/jobs?jobId=$JobName"
-    $op = Invoke-RestMethod -Method Post -Uri $createUrl -Headers $headers -Body $body
+  } catch {
+    $detail = $_.ErrorDetails.Message
+    if (-not $detail) { $detail = $_.Exception.Message }
+    throw "Cloud Run Admin API request failed: $detail"
   }
 
   # Wait briefly for the long-running operation when present.
@@ -213,7 +210,7 @@ function Deploy-CloudRunJobViaRest {
     $deadline = (Get-Date).AddMinutes(3)
     do {
       Start-Sleep -Seconds 2
-      $op = Invoke-RestMethod -Method Get -Uri "https://run.googleapis.com/v2/$($op.name)" -Headers $headers
+      $op = Invoke-RestMethod -Method Get -Uri ("https://run.googleapis.com/v2/{0}" -f $op.name) -Headers $headers
     } while (-not $op.done -and (Get-Date) -lt $deadline)
     if (-not $op.done) { throw "Timed out waiting for Cloud Run job operation $($op.name)" }
     if ($op.error) { throw "Cloud Run job operation failed: $($op.error | ConvertTo-Json -Compress)" }

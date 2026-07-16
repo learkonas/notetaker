@@ -1,0 +1,11 @@
+{
+  "requiredSections": [
+    "TL;DR",
+    "Key Ideas",
+    "Analysis",
+    "Questions"
+  ],
+  "avgLength": 2000,
+  "avgBullets": 8,
+  "preferredTagPrefix": "#"
+}
